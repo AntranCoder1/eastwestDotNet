@@ -1,6 +1,7 @@
 ﻿using eastwest.Data;
 using eastwest.Models;
 using Microsoft.EntityFrameworkCore;
+using eastwest.ClassValue;
 
 namespace eastwest.Repository
 {
@@ -14,54 +15,64 @@ namespace eastwest.Repository
             _configuration = configuration;
         }
 
-        //     public async Task<LocationModel> createLocation(LocationModel location)
-        //     {
-        //         var newLocation = new LocationModel()
-        //         {
-        //             Loc_Barcodes = location.Loc_Barcodes
-        //         };
+        public async Task<LocationModel> findLocbarcode(string loc)
+        {
+            return await _context.Locations.Where(l => l.Loc_Barcodes == loc).FirstOrDefaultAsync();
+        }
 
-        //         _context.Locations.Add(newLocation);
-        //         await _context.SaveChangesAsync();
+        public async Task<LocationModel> createLocation(LocationValue location)
+        {
+            var newLocation = new LocationModel()
+            {
+                Loc_Barcodes = location.Loc_Barcodes
+            };
 
-        //         return newLocation;
-        //     }
+            _context.Locations.Add(newLocation);
+            await _context.SaveChangesAsync();
 
-        //     public async Task<LocationModel> updateLocation(int locationId, LocationModel updateLocation)
-        //     {
-        //         var findLocation = await _context.Locations.FindAsync(locationId);
+            return newLocation;
+        }
 
-        //         if (findLocation != null)
-        //         {
-        //             findLocation.Loc_Barcodes = updateLocation.Loc_Barcodes;
+        public async Task<LocationModel> updateLocation(int locationId, LocationModel updateLocation)
+        {
+            var findLocation = await _context.Locations.FindAsync(locationId);
 
-        //             _context.Locations.Update(findLocation);
-        //             await _context.SaveChangesAsync();
-        //         }
+            if (findLocation != null)
+            {
+                findLocation.Loc_Barcodes = updateLocation.Loc_Barcodes;
 
-        //         return findLocation;
-        //     }
+                _context.Locations.Update(findLocation);
+                await _context.SaveChangesAsync();
+            }
 
-        //     public async Task<LocationModel> deleteLocation(int locationId)
-        //     {
-        //         var findLocation = await _context.Locations.FindAsync(locationId);
+            return findLocation;
+        }
 
-        //         if (findLocation != null)
-        //         {
-        //             _context.Locations.Remove(findLocation);
-        //             await _context.SaveChangesAsync();
-        //         }
+        public async Task<LocationModel> deleteLocation(int locationId)
+        {
+            var findLocation = await _context.Locations.FindAsync(locationId);
 
-        //         return findLocation;
-        //     }
-        //     public async Task<LocationModel> findAll()
-        //     {
-        //         return await _context.Locations.FindAsync();
-        //     }
+            if (findLocation != null)
+            {
+                _context.Locations.Remove(findLocation);
+                await _context.SaveChangesAsync();
+            }
 
-        //     public async Task<LocationModel> findById(int locationId)
-        //     {
-        //         return await _context.Locations.Where(l => l.Id == locationId).FirstOrDefaultAsync();
-        //     }
+            return findLocation;
+        }
+        public async Task<LocationModel> findAll()
+        {
+            return await _context.Locations.FindAsync();
+        }
+
+        public async Task<LocationModel> findById(int locationId)
+        {
+            return await _context.Locations.Where(l => l.Id == locationId).FirstOrDefaultAsync();
+        }
+
+        public async Task<LocationModel> findWithLoc(string loc)
+        {
+            return await _context.Locations.Where(l => l.Loc_Barcodes == loc).FirstOrDefaultAsync();
+        }
     }
 }

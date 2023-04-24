@@ -8,11 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Newtonsoft.Json;
 using eastwest.ClassValue;
 using System.Text;
-using System;
-using System.Linq;
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
+using OfficeOpenXml;
 
 namespace eastwest.Controllers
 {
@@ -55,11 +51,11 @@ namespace eastwest.Controllers
 
             if (users != null)
             {
-                return Ok(users);
+                return Ok(new { status = "success", data = users });
             }
             else
             {
-                return null;
+                return NotFound(new { status = "failed", message = "Not Found" });
             }
         }
 
@@ -91,21 +87,21 @@ namespace eastwest.Controllers
 
             if (checkAdmin.isAdmin != 1)
             {
-                return BadRequest("You not admin");
+                return BadRequest(new { status = "failed", message = "You not admin" });
             }
 
             var findProductSku = await productRepo.findWithSKU(product.SKU_product);
 
             if (findProductSku != null)
             {
-                return BadRequest("SKU already exists");
+                return BadRequest(new { status = "failed", message = "SKU already exists" });
             }
 
             var findProductUpc = await productRepo.findWithUPC(product.UPC);
 
             if (findProductUpc != null)
             {
-                return BadRequest("UPC already exists");
+                return BadRequest(new { status = "failed", message = "SUPC already exists" });
             }
 
             var createProduct = await productRepo.createProduct(product);
@@ -118,7 +114,7 @@ namespace eastwest.Controllers
                 }
             }
 
-            return Ok(product);
+            return Ok(new { status = "success", message = "create product has been success", });
         }
 
         [HttpPost("uploadImage")]
@@ -257,100 +253,142 @@ namespace eastwest.Controllers
         {
             try
             {
-                var fileExtension = new FileExtension();
+                var productRepo = new ProductRepo(_context, _configuration);
+                var productImageRepo = new ProductImageRepo(_context, _configuration);
+                var productLocationRepo = new ProductLocationRepo(_context, _configuration);
+                var locationRepo = new LocationRepo(_context, _configuration);
 
-                if (!fileExtension.IsFileExtension(file.FileName))
+                string host = "productManagerment/getFile/";
+                string urls = host + file.FileName;
+                string url = Path.Combine(Directory.GetCurrentDirectory(), "Upload/File", file.FileName);
+
+                using (var stream = new FileStream(url, FileMode.Create))
                 {
-                    return BadRequest("Invalid image type");
+                    await file.CopyToAsync(stream);
                 }
 
-                string uploadsFolder = Path.Combine(_webHostEnvironment.ContentRootPath, "Upload/File");
-                Directory.CreateDirectory(uploadsFolder);
+                var parsedData = new List<ProductImportDto>();
 
-                string uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                using (var package = new ExcelPackage(new FileInfo(url)))
                 {
-                    await file.CopyToAsync(fileStream);
-                }
+                    var worksheet = package.Workbook.Worksheets[0];
+                    var rowCount = worksheet.Dimension.Rows;
+                    var colCount = worksheet.Dimension.Columns;
 
-                string imageUrl = Url.Content("~/Upload/File/" + uniqueFileName);
-
-                var path = Path.Combine(_webHostEnvironment.ContentRootPath, imageUrl);
-
-
-                using (var stream = new FileStream(path, FileMode.Create))
-                {
-                    // you should use Write(stream) instead, or reset the stream position.
-                    Request.Form.Files[0].CopyTo(stream);
-
-                }
-
-                {
-                    //create the object for workbook part  
-                    WorkbookPart workbookPart = doc.WorkbookPart;
-                    Sheets thesheetcollection = workbookPart.Workbook.GetFirstChild<Sheets>();
-                    StringBuilder excelResult = new StringBuilder();
-
-
-                    //using for each loop to get the sheet from the sheetcollection  
-                    foreach (Sheet thesheet in thesheetcollection)
+                    for (int row = 2; row <= rowCount; row++)
                     {
-                        excelResult.AppendLine("Excel Sheet Name : " + thesheet.Name);
-                        excelResult.AppendLine("----------------------------------------------- ");
-                        //statement to get the worksheet object by using the sheet id  
-                        Worksheet theWorksheet = ((WorksheetPart)workbookPart.GetPartById(thesheet.Id)).Worksheet;
+                        var product = new ProductImportDto();
 
-                        SheetData thesheetdata = (SheetData)theWorksheet.GetFirstChild<SheetData>();
-                        foreach (Row thecurrentrow in thesheetdata)
+                        for (int col = 1; col <= colCount; col++)
                         {
-                            foreach (Cell thecurrentcell in thecurrentrow)
+                            var cellValue = worksheet.Cells[row, col].Value?.ToString();
+
+                            if (cellValue != null)
                             {
-                                //statement to take the integer value  
-                                string currentcellvalue = string.Empty;
-                                if (thecurrentcell.DataType != null)
+                                switch (worksheet.Cells[1, col].Value?.ToString())
                                 {
-                                    if (thecurrentcell.DataType == CellValues.SharedString)
-                                    {
-                                        int id;
-                                        if (Int32.TryParse(thecurrentcell.InnerText, out id))
-                                        {
-                                            SharedStringItem item = workbookPart.SharedStringTablePart.SharedStringTable.Elements<SharedStringItem>().ElementAt(id);
-                                            if (item.Text != null)
-                                            {
-                                                //code to take the string value  
-                                                excelResult.Append(item.Text.Text + " ");
-                                            }
-                                            else if (item.InnerText != null)
-                                            {
-                                                currentcellvalue = item.InnerText;
-                                            }
-                                            else if (item.InnerXml != null)
-                                            {
-                                                currentcellvalue = item.InnerXml;
-                                            }
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    excelResult.Append(Convert.ToInt16(thecurrentcell.InnerText) + " ");
+                                    case "SKU":
+                                        product.SKU = cellValue;
+                                        break;
+                                    case "Product Name":
+                                        product.ProductName = cellValue;
+                                        break;
+                                    case "UPC":
+                                        product.UPC = cellValue;
+                                        break;
+                                    case "Locations":
+                                        product.Locations = cellValue.Split(',').ToList(); ;
+                                        break;
+                                    case "Quantity":
+                                        product.Quantity = int.Parse(cellValue);
+                                        break;
+                                    case "Images":
+                                        product.Images = cellValue;
+                                        break;
                                 }
                             }
-                            excelResult.AppendLine();
                         }
-                        excelResult.Append("");
-                        Console.WriteLine(excelResult.ToString());
-                        Console.ReadLine();
+
+                        parsedData.Add(product);
                     }
                 }
+
+                if (parsedData.Count > 0)
+                {
+                    foreach (var i in parsedData)
+                    {
+                        ProductModel addProduct;
+                        // check product exists
+                        var getProduct = await productRepo.findWithSKU(i.SKU);
+
+                        if (getProduct != null)
+                        {
+                            addProduct = getProduct;
+                        }
+                        else
+                        {
+                            addProduct = await productRepo.createProductImport(i);
+
+                            // create image product
+                            var createImage = await productImageRepo.createImage(i.Images, addProduct.Id);
+                        }
+
+                        foreach (var j in i.Locations)
+                        {
+                            // check product location exists
+                            var getProductLocation = await productLocationRepo.findBySkuAndLoc(i.SKU, j);
+
+                            LocationModel location;
+
+                            var getLocation = await locationRepo.findLocbarcode(j);
+
+                            if (getLocation == null)
+                            {
+                                var dataLoc = new LocationValue
+                                {
+                                    Loc_Barcodes = j
+                                };
+
+                                location = await locationRepo.createLocation(dataLoc);
+                            }
+                            else
+                            {
+                                location = getLocation;
+                            }
+
+                            if (getProductLocation == null)
+                            {
+                                var newProductLocation = new ProductLocationValue
+                                {
+                                    productId = addProduct.Id,
+                                    locationId = location.Id,
+                                    quantity = i.Quantity,
+                                    skuProduct = addProduct.SKU_product,
+                                    locBarcode = location.Loc_Barcodes
+                                };
+
+                                var createNewProductLocation = await productLocationRepo.createNewProductLocation(newProductLocation);
+                            }
+                            else
+                            {
+                                // update quantity of product in location
+                                var lastQuantity = getProductLocation.quantity + i.Quantity;
+
+                                var updateQuantity = await productLocationRepo.updateQuantity(i.SKU, j, lastQuantity);
+                            }
+                        }
+
+                    }
+                }
+                return Ok(new { status = "success", message = "Data imported successfully.", data = parsedData });
             }
             catch (Exception e)
             {
 
-                throw e;
+                return BadRequest(new
+                {
+                    message = e.Message
+                });
             }
         }
     }

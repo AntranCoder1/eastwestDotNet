@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "sAH8vVAWxKfXJv4aSiQupph8bOn7Cz/dHq5xNsZHpBKC0t6/SZXU8FxPUo5SXhG1P2jycUgL9zWFY4fUeJRZUw==",
+  "dgSpecHash": "fQQa5KAQYbd6GEB1uSOP4bpo91RnSodn2akvImR72CFkflnVknwFzxZ3wmTZQaOI8Rr0IQTD3ZvDYJiGaL5mXQ==",
   "success": true,
   "projectFilePath": "D:\\.NET\\eastwest\\eastwest\\eastwest.csproj",
   "expectedPackageFiles": [
@@ -10,6 +10,9 @@
     "C:\\Users\\h2inc\\.nuget\\packages\\bouncycastle.cryptography\\2.1.1\\bouncycastle.cryptography.2.1.1.nupkg.sha512",
     "C:\\Users\\h2inc\\.nuget\\packages\\closedxml\\0.101.0\\closedxml.0.101.0.nupkg.sha512",
     "C:\\Users\\h2inc\\.nuget\\packages\\documentformat.openxml\\2.16.0\\documentformat.openxml.2.16.0.nupkg.sha512",
+    "C:\\Users\\h2inc\\.nuget\\packages\\epplus\\6.2.2\\epplus.6.2.2.nupkg.sha512",
+    "C:\\Users\\h2inc\\.nuget\\packages\\epplus.interfaces\\6.1.1\\epplus.interfaces.6.1.1.nupkg.sha512",
+    "C:\\Users\\h2inc\\.nuget\\packages\\epplus.system.drawing\\6.1.1\\epplus.system.drawing.6.1.1.nupkg.sha512",
     "C:\\Users\\h2inc\\.nuget\\packages\\exceldatareader\\3.6.0\\exceldatareader.3.6.0.nupkg.sha512",
     "C:\\Users\\h2inc\\.nuget\\packages\\exceldatareader.dataset\\3.6.0\\exceldatareader.dataset.3.6.0.nupkg.sha512",
     "C:\\Users\\h2inc\\.nuget\\packages\\excelnumberformat\\1.1.0\\excelnumberformat.1.1.0.nupkg.sha512",
@@ -53,6 +56,7 @@
     "C:\\Users\\h2inc\\.nuget\\packages\\microsoft.identitymodel.protocols\\6.24.0\\microsoft.identitymodel.protocols.6.24.0.nupkg.sha512",
     "C:\\Users\\h2inc\\.nuget\\packages\\microsoft.identitymodel.protocols.openidconnect\\6.24.0\\microsoft.identitymodel.protocols.openidconnect.6.24.0.nupkg.sha512",
     "C:\\Users\\h2inc\\.nuget\\packages\\microsoft.identitymodel.tokens\\6.24.0\\microsoft.identitymodel.tokens.6.24.0.nupkg.sha512",
+    "C:\\Users\\h2inc\\.nuget\\packages\\microsoft.io.recyclablememorystream\\2.2.1\\microsoft.io.recyclablememorystream.2.2.1.nupkg.sha512",
     "C:\\Users\\h2inc\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
     "C:\\Users\\h2inc\\.nuget\\packages\\microsoft.netcore.targets\\1.1.0\\microsoft.netcore.targets.1.1.0.nupkg.sha512",
     "C:\\Users\\h2inc\\.nuget\\packages\\microsoft.openapi\\1.2.3\\microsoft.openapi.1.2.3.nupkg.sha512",

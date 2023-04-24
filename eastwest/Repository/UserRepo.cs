@@ -109,14 +109,13 @@ namespace eastwest.Repository
             return user;
         }
 
-        public async Task<UserModel> updateResetToken(string email, UserModel user)
+        public async Task<UserModel> updateResetToken(string email, string token)
         {
             var findUser = await _context.Users.Where(u => u.email == email).FirstOrDefaultAsync();
 
             if (findUser != null)
             {
-                findUser.reset_password_token = user.reset_password_token;
-                findUser.verify = user.verify;
+                findUser.reset_password_token = token;
 
                 _context.Users.Update(findUser);
                 await _context.SaveChangesAsync();

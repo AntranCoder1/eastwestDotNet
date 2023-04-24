@@ -70,5 +70,20 @@ namespace eastwest.Repository
                 return null;
             }
         }
+
+        public async Task<ProductModel> createProductImport(ProductImportDto product)
+        {
+            var newProduct = new ProductModel
+            {
+                SKU_product = product.SKU,
+                Product_Name = product.ProductName,
+                UPC = product.UPC
+            };
+
+            await _context.Products.AddAsync(newProduct);
+            await _context.SaveChangesAsync();
+
+            return newProduct;
+        }
     }
 }

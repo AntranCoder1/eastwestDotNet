@@ -10,6 +10,8 @@ using System.Security.Claims;
 using System.Text;
 using Newtonsoft.Json;
 using eastwest.ClassValue;
+using System.Text;
+using OfficeOpenXml;
 
 namespace eastwest.Controllers
 {
@@ -301,44 +303,117 @@ namespace eastwest.Controllers
             return File(image, "image/jpeg");
         }
 
-        //[HttpPost("forgotPassword")]
-        //public async Task<IActionResult> forgotPassword([FromBody] string email)
-        //{
-        //    var userRepo = new UserRepo(_context, _configuration);
-        //    var verifyCode = new VerifyCode();
+        [HttpPost("importFile")]
+        public async Task<IActionResult> importFileWorker(IFormFile file)
+        {
+            try
+            {
+                var userRepo = new UserRepo(_context, _configuration);
 
-        //    if (email == null)
-        //    {
-        //        return NotFound("Email not found");
-        //    }
+                string host = "workerManagerment/getFile/";
+                string urls = host + file.FileName;
+                string url = Path.Combine(Directory.GetCurrentDirectory(), "Upload/File", file.FileName);
 
-        //    var findUser = await userRepo.findUserWithEmail(email);
+                using (var stream = new FileStream(url, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
 
-        //    if (findUser != null)
-        //    {
-        //        var randomVerify = verifyCode.random(6);
+                var parsedData = new List<Login>();
 
-        //        var tokenRP = BCrypt.Net.BCrypt.HashPassword(randomVerify);
+                using (var package = new ExcelPackage(new FileInfo(url)))
+                {
+                    var worksheet = package.Workbook.Worksheets[0];
+                    var rowCount = worksheet.Dimension.Rows;
+                    var colCount = worksheet.Dimension.Columns;
 
-        //        var token = tokenRP.Substring(21).Replace("/", "");
+                    for (int row = 2; row <= rowCount; row++)
+                    {
+                        var user = new Login();
 
-        //        string verify = randomVerify;
+                        for (int col = 1; col <= colCount; col++)
+                        {
+                            var cellValue = worksheet.Cells[row, col].Value?.ToString();
 
-        //        var updatedUser = new UserModel
-        //        {
-        //            reset_password_token = token,
-        //            verify = int.Parse(verify)
-        //        };
+                            if (cellValue != null)
+                            {
+                                switch (worksheet.Cells[1, col].Value?.ToString())
+                                {
+                                    case "Name":
+                                        user.name = cellValue;
+                                        break;
+                                    case "Email":
+                                        user.email = cellValue;
+                                        break;
+                                    case "Phone":
+                                        user.phone = int.Parse(cellValue);
+                                        break;
+                                }
+                            }
+                        }
 
-        //        var updateResetPasswordToken = await userRepo.updateResetToken(email, updatedUser);
+                        parsedData.Add(user);
+                    }
+                }
 
-        //        if (updateResetPasswordToken != null)
-        //        {
+                if (parsedData.Count > 0)
+                {
+                    foreach (var i in parsedData)
+                    {
+                        var getUser = await userRepo.findUserWithEmail(i.email);
 
-        //        }
-        //    }
+                        if (getUser == null)
+                        {
+                            int admin = 0;
 
-        //}
+                            var dataUser = new Login
+                            {
+                                name = i.name,
+                                email = i.email,
+                                phone = i.phone
+                            };
 
+                            var createNewUser = await userRepo.createNewUser(dataUser, admin);
+                        }
+                    }
+                }
+
+                return Ok(new { status = "success", message = "import file worker has been success" });
+            }
+            catch (Exception e)
+            {
+                return BadRequest(new
+                {
+                    message = e.Message
+                });
+            }
+        }
+
+        [HttpPost("forgotPassword")]
+        public async Task<IActionResult> forgotPassword()
+        {
+            var userRepo = new UserRepo(_context, _configuration);
+
+            string rawContent = string.Empty;
+            using (var reader = new StreamReader(Request.Body,
+                          encoding: Encoding.UTF8, detectEncodingFromByteOrderMarks: false))
+            {
+                rawContent = await reader.ReadToEndAsync();
+            }
+
+            Login user = JsonConvert.DeserializeObject<Login>(rawContent);
+
+            var findEmail = await userRepo.findUserWithEmail(user.email);
+
+            if (findEmail == null)
+            {
+                return BadRequest(new { status = "failed", message = "Email not found" });
+            }
+
+            string tokenRP = BCrypt.Net.BCrypt.HashPassword("resetPassword");
+
+            string token = tokenRP.Substring(21).Replace("/", "");
+
+        }
     }
 }

@@ -22,6 +22,6 @@ namespace eastwest.Models
         public DateTime created_at { get; set; } = DateTime.Now;
         public DateTime updated_at { get; set; } = DateTime.Now;
         public string? skuProduct { get; set; }
-        public string? locBarcode { get; }
+        public string? locBarcode { get; set; }
     }
 }

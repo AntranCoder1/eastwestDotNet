@@ -22,7 +22,8 @@ namespace eastwest.Migrations
                     quantity = table.Column<int>(type: "int", nullable: true),
                     created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
                     updated_at = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    skuProduct = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    skuProduct = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    locBarcode = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {

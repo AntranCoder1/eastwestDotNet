@@ -48,6 +48,10 @@
               "target": "Package",
               "version": "[0.101.0, )"
             },
+            "EPPlus": {
+              "target": "Package",
+              "version": "[6.2.2, )"
+            },
             "ExcelDataReader.DataSet": {
               "target": "Package",
               "version": "[3.6.0, )"
