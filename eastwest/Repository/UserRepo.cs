@@ -132,5 +132,50 @@ namespace eastwest.Repository
         {
             return await _context.Users.FindAsync();
         }
+
+        public async Task<UserModel> findUserWithToken(string token)
+        {
+            return await _context.Users.Where(u => u.reset_password_token == token).FirstOrDefaultAsync();
+        }
+
+        public async Task<UserModel> updatePassword(string token, string password)
+        {
+            var finduser = await _context.Users.Where(u => u.reset_password_token == token).FirstOrDefaultAsync();
+
+            if (finduser != null)
+            {
+                string encryptedPassword = BCrypt.Net.BCrypt.HashPassword(password);
+
+                finduser.password = password;
+
+                _context.Users.Update(finduser);
+                await _context.SaveChangesAsync();
+
+                return finduser;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public async Task<UserModel> updateTokenById(int userId)
+        {
+            var findUser = await _context.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
+
+            if (findUser != null)
+            {
+                findUser.reset_password_token = "";
+
+                _context.Users.Update(findUser);
+                await _context.SaveChangesAsync();
+
+                return findUser;
+            }
+            else
+            {
+                return null;
+            }
+        }
     }
 }

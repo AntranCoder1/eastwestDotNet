@@ -12,6 +12,9 @@ using Newtonsoft.Json;
 using eastwest.ClassValue;
 using System.Text;
 using OfficeOpenXml;
+using eastwest.Utils;
+using System.Net;
+using System.Net.Mail;
 
 namespace eastwest.Controllers
 {
@@ -49,12 +52,12 @@ namespace eastwest.Controllers
 
             if (checkEmail != null)
             {
-                return Ok("Email already exists");
+                return BadRequest(new { status = "failed", message = "Email already exists" });
             }
 
             var userContact = await userRepo.createNewUser(user, admin);
 
-            return Ok(userContact);
+            return Ok(new { status = "success" });
         }
 
         [HttpPost("login")]
@@ -77,7 +80,7 @@ namespace eastwest.Controllers
 
                 if (findEmail == null)
                 {
-                    return NotFound("Email Not Found");
+                    return NotFound(new { status = "failed", message = "Email Not Found" });
                 }
 
                 if (BCrypt.Net.BCrypt.Verify(user.password, findEmail.password))
@@ -95,16 +98,16 @@ namespace eastwest.Controllers
                     var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
                     var token = new JwtSecurityToken(_configuration["Jwt:Issuer"], _configuration["Jwt:Audience"], claims, expires: DateTime.UtcNow.AddDays(1), signingCredentials: signIn);
 
-                    return Ok(new JwtSecurityTokenHandler().WriteToken(token));
+                    return Ok(new { status = "success", data = new JwtSecurityTokenHandler().WriteToken(token) });
                 }
                 else
                 {
-                    return BadRequest("Invalid crendentials");
+                    return BadRequest(new { status = "failed", message = "Invalid crendentials" });
                 }
             }
             else
             {
-                return BadRequest();
+                return BadRequest(new { status = "failed" });
             }
         }
 
@@ -131,21 +134,21 @@ namespace eastwest.Controllers
 
             if (int.Parse(isAdmin) != 1)
             {
-                return BadRequest("You not admin");
+                return BadRequest(new { status = "failed", message = "You not admin" });
             }
 
             var checkEmail = await userRepo.findUserWithEmail(user.email);
 
             if (checkEmail != null)
             {
-                return Ok("Email already exists");
+                return BadRequest(new { status = "failed", message = "Email already exists" });
             }
 
             int admin = 0;
 
             var createWorker = await userRepo.createNewUser(user, admin);
 
-            return Ok(createWorker);
+            return Ok(new { status = "success" });
         }
 
         [Authorize]
@@ -162,7 +165,7 @@ namespace eastwest.Controllers
 
             if (users != null)
             {
-                return Ok(users);
+                return Ok(new { status = "success", data = users });
             }
             else
             {
@@ -184,11 +187,11 @@ namespace eastwest.Controllers
 
             if (user != null)
             {
-                return Ok(user);
+                return Ok(new { status = "success", data = user });
             }
             else
             {
-                return NotFound("User Not Found");
+                return NotFound(new { status = "failed", message = "User Not Found" });
             }
         }
 
@@ -215,7 +218,7 @@ namespace eastwest.Controllers
 
             if (findUserId == null)
             {
-                return NotFound("User not found");
+                return NotFound(new { status = "failed", message = "User not found" });
             }
 
             var updatedUser = new Login
@@ -230,11 +233,11 @@ namespace eastwest.Controllers
 
             if (result != null)
             {
-                return Ok(result);
+                return Ok(new { status = "success" });
             }
             else
             {
-                return NotFound();
+                return BadRequest(new { status = "failed" });
             }
         }
 
@@ -254,17 +257,17 @@ namespace eastwest.Controllers
 
             if (findUser == null)
             {
-                return NotFound("User not found");
+                return NotFound(new { status = "failed", message = "User not found" });
             }
 
             if (findUser.isAdmin != 1)
             {
-                return BadRequest("You not admin");
+                return BadRequest(new { status = "failed", message = "You not admin" });
             }
 
             var removeUser = await userRepo.deleteUser(int.Parse(userId));
 
-            return Ok("User has been deleted successfully");
+            return Ok(new { status = "success", message = "User has been deleted successfully" });
         }
 
         [Authorize]
@@ -275,7 +278,7 @@ namespace eastwest.Controllers
 
             if (!imageExtension.IsImageExtension(image.FileName))
             {
-                return BadRequest("Invalid image type");
+                return BadRequest(new { status = "failed", message = "Invalid image type" });
             }
 
             string uploadsFolder = Path.Combine(_webHostEnvironment.ContentRootPath, "Upload/User");
@@ -292,7 +295,7 @@ namespace eastwest.Controllers
 
             string imageUrl = Url.Content("~/Upload/User/" + uniqueFileName);
 
-            return Ok(imageUrl);
+            return Ok(new { status = "success", data = imageUrl });
         }
 
         [HttpGet("images/{filename}")]
@@ -414,6 +417,41 @@ namespace eastwest.Controllers
 
             string token = tokenRP.Substring(21).Replace("/", "");
 
+            var updateResetPasswordToken = await userRepo.updateResetToken(user.email, token);
+
+            var sendMail = new SendMail();
+
+            sendMail.emailResetPasword(user.email, token, findEmail.name);
+
+            return Ok(new { status = "success", message = "email sent", });
+        }
+
+        [HttpPost("newPassword")]
+        public async Task<IActionResult> NewPassword()
+        {
+            var userRepo = new UserRepo(_context, _configuration);
+
+            string rawContent = string.Empty;
+            using (var reader = new StreamReader(Request.Body,
+                          encoding: Encoding.UTF8, detectEncodingFromByteOrderMarks: false))
+            {
+                rawContent = await reader.ReadToEndAsync();
+            }
+
+            NewPasswordValue newPassword = JsonConvert.DeserializeObject<NewPasswordValue>(rawContent);
+
+            var findUserByToken = await userRepo.findUserWithToken(newPassword.token);
+
+            if (findUserByToken == null)
+            {
+                return NotFound(new { status = "failed", message = "user not found" });
+            }
+
+            var updatePassword = await userRepo.updatePassword(newPassword.token, newPassword.newPassword);
+
+            var updateToken = await userRepo.updateTokenById(updatePassword.Id);
+
+            return Ok(new { status = "success" });
         }
     }
 }

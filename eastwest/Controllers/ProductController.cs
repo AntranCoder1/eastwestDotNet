@@ -44,7 +44,7 @@ namespace eastwest.Controllers
 
             if (checkAdmin.isAdmin != 1)
             {
-                return BadRequest("You not admin");
+                return BadRequest(new { status = "failed", message = "You not admin" });
             }
 
             var users = await productRepo.findAll();
@@ -130,17 +130,14 @@ namespace eastwest.Controllers
 
             if (checkAdmin.isAdmin != 1)
             {
-                return BadRequest("You not admin");
+                return BadRequest(new { status = "failed", message = "You not admin" });
             }
 
             var imageExtension = new ImageExtension();
 
-            Console.WriteLine("image.FileName" + image.FileName);
-            Console.WriteLine("image" + image);
-
             if (!imageExtension.IsImageExtension(image.FileName))
             {
-                return BadRequest("Invalid image type");
+                return BadRequest(new { status = "failed", message = "Invalid image type" });
             }
 
             string uploadsFolder = Path.Combine(_webHostEnvironment.ContentRootPath, "Upload/Product");
@@ -157,7 +154,7 @@ namespace eastwest.Controllers
 
             string imageUrl = Url.Content("~/Upload/Product/" + uniqueFileName);
 
-            return Ok(imageUrl);
+            return Ok(new { status = "success", data = imageUrl });
         }
 
 
